@@ -1,0 +1,14 @@
+FROM adoptopenjdk/openjdk8:alpine-jdk as builder
+# First stage : Extract the layers
+WORKDIR spring-boot-docker
+ARG JAR_FILE=target/spring-boot-docker.jar
+COPY ${JAR_FILE} spring-boot-docker.jar
+RUN java -Djarmode=layertools -jar spring-boot-docker.jar extract
+
+FROM openjdk:8-jdk-alpine as runtime
+# Second stage : Copy the extracted layers
+COPY --from=builder spring-boot-docker/dependencies/ ./
+COPY --from=builder spring-boot-docker/spring-boot-loader ./
+COPY --from=builder spring-boot-docker/snapshot-dependencies/ ./
+COPY --from=builder spring-boot-docker/application/ ./
+CMD ["java", "org.springframework.boot.loader.JarLauncher"]
